@@ -8,6 +8,7 @@ router = APIRouter(
 
 @router.get("")
 def get_administradores():
+    
     return {"message": "Lista de administradores"} 
 
 @router.post("")

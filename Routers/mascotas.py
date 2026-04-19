@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, File, UploadFile
 from models.mascotas import Masotas_create, Mascotas_show, Mascotas_update
 from database.conexion import get_connection
+
+from utils.cloudinary import subir_imagen
 router = APIRouter(
     prefix="/mascotas",
     tags=["mascotas"]
@@ -26,4 +28,12 @@ def update_mascota(mascota: Mascotas_update):
 @router.delete("/{mascota_id}")
 def delete_mascota(mascota_id: int):
     return {"message": f"Mascota con ID {mascota_id} eliminada"}
+
+@router.post("/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    # Subir la imagen a Cloudinary
+    image_url = subir_imagen(file.file, "mascotas")
+    
+    return {"message": "Imagen subida exitosamente", "url": image_url}
+
 

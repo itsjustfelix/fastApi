@@ -5,6 +5,8 @@ class Masotas_create(BaseModel):
     codigo_especie: str
     codigo_raza: str
     cedula_propietario: str
+    link_imagen: str
+
 
 class Mascotas_show(BaseModel):
     codigo: int
@@ -12,6 +14,7 @@ class Mascotas_show(BaseModel):
     especie: str
     raza: str
     propietario: str
+    link_imagen: str
 
     class Config:
         from_attributes = True
