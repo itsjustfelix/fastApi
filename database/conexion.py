@@ -7,9 +7,7 @@ load_dotenv()
 pool = oracledb.create_pool(
     user=os.getenv("DB_USER"),
     password=os.getenv("DB_PASSWORD"),
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT"),
-    service_name=os.getenv("DB_SERVICE_NAME"),
+    dsn=os.getenv("DB_DSN"),
     min=1,
     max=5,
     increment=1
