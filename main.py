@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from Routers.administradores import router as administradores_router
 from Routers.propietarios import router as propietarios_router
 from Routers.citas import router as citas_router
@@ -14,6 +15,14 @@ from database.conexion import get_connection
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 
 @app.get("/")
