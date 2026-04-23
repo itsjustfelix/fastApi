@@ -8,14 +8,14 @@ class Veterinarios_create(BaseModel):
     codigo_especialidad: str
     email: str
     contraseña: str
+    rol: str = "2"
 
 class Veterinarios_show(BaseModel):
     cedula: str
-    nombreCompleto: str
-    telefono: str
+    nombre_completo: str
     sexo: str
-    especialidad: str
-    email: str
+    telefono: str
+    nombre_especializacion: str
 
     class Config:
         from_attributes = True

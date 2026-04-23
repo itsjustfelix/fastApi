@@ -10,9 +10,9 @@ class Citas_show(BaseModel):
     codigo: int
     fecha: str
     hora: str
-    mascota: str
-    veterinario: str
-    estado: str
+    nombre_mascota: str
+    nombre_veterinario: str
+    estado_cita: str
 
     class Config:
         from_attributes = True

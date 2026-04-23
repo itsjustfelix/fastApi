@@ -6,13 +6,13 @@ class Administradores_create(BaseModel):
     telefono: str
     email: str
     contraseña: str
+    rol : str = "1"
 
 class Administradores_show(BaseModel):
     cedula: str
-    nombreCompleto: str
+    nombre_completo: str
     telefono: str
     email: str
-
     class Config:
         from_attributes = True
 

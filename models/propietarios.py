@@ -13,9 +13,10 @@ class Propietarios_create(BaseModel):
 class Propietarios_show(BaseModel):
 
     cedula : str
-    nombreCompleto : str
+    nombre_completo : str
     telefono : str
     sexo : str
+    email: str
 
     class Config:
         from_attributes = True

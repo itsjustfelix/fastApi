@@ -9,6 +9,7 @@ from Routers.veterinarios import router as veterinarios_router
 from Routers.razas import router as razas_router
 from Routers.loggin import router as loggin_router
 from Routers.cosnultas import router as consultas_router
+from Routers.especies import router as especies_router
 from database.conexion import get_connection
 
 
@@ -62,4 +63,5 @@ app.include_router(veterinarios_router)
 app.include_router(razas_router)
 app.include_router(consultas_router)
 app.include_router(loggin_router)
+app.include_router(especies_router)
 

@@ -3,30 +3,14 @@ import oracledb
 from utils.passwordHasser import verificar_password
 from database.conexion import get_connection
 from models.login import Login
-from jose import jwt
-from datetime import datetime,timedelta, timezone
-import os
-from dotenv import load_dotenv
+from utils.token import crear_token
 
-
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
 
 router = APIRouter(
     prefix="/login",
     tags=["login"]
 )
 
-
-def crear_token(codigo_usuario: str, codigo_rol: str) -> str:
-    payload = {
-        "sub": codigo_usuario,
-        "rol": codigo_rol,
-        "exp": datetime.now(tz=timezone.utc) + timedelta(hours=8)
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 @router.post("")
 def login(datos : Login):
@@ -47,13 +31,20 @@ def login(datos : Login):
         if not verificar_password(datos.contraseña, contraseña_out.getvalue()):
             raise HTTPException(status_code=401, detail="Credenciales incorrectas")
         
+        nombre = buscar_nombre_por_codigo_usuario(codigo_rol=codigo_usuario_out.getvalue(),
+                                                  codigo_usuario= codigo_usuario_out.getvalue())
+
+
+        
         token = crear_token(
             codigo_usuario_out.getvalue(),
             codigo_rol_out.getvalue()
         )
+
         return{
-            "token": token,
-            "rol": codigo_rol_out.getvalue()
+            "token" : token,
+            "rol"   : codigo_rol_out.getvalue(),
+            "nombre": nombre
         }
         
     except HTTPException:
@@ -71,3 +62,31 @@ def login(datos : Login):
     finally:
         cursor.close()
         conn.close()
+
+
+def buscar_nombre_por_codigo_usuario(codigo_rol: str, codigo_usuario: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        nombre = None
+
+        match codigo_rol:
+            case "1":
+                nombre = cursor.callfunc("PKG_ADMINISTRADORES.FN_CONSULTAR_NOMBRE",
+                                            str,
+                                            [codigo_usuario])
+            case "2":
+                nombre = cursor.callfunc("PKG_VETERINARIOS.FN_CONSULTAR_NOMBRE",
+                                            str,
+                                            [codigo_usuario])
+            case "3":
+                nombre = cursor.callfunc("PKG_PROPIETARIOS.FN_CONSULTAR_NOMBRE",
+                                            str,
+                                            [codigo_usuario])
+        return nombre
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+        
