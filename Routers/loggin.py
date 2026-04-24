@@ -31,7 +31,7 @@ def login(datos : Login):
         if not verificar_password(datos.contraseña, contraseña_out.getvalue()):
             raise HTTPException(status_code=401, detail="Credenciales incorrectas")
         
-        nombre = buscar_nombre_por_codigo_usuario(codigo_rol=codigo_usuario_out.getvalue(),
+        nombre = buscar_nombre_por_codigo_usuario(codigo_rol=codigo_rol_out.getvalue(),
                                                   codigo_usuario= codigo_usuario_out.getvalue())
 
 
@@ -44,7 +44,8 @@ def login(datos : Login):
         return{
             "token" : token,
             "rol"   : codigo_rol_out.getvalue(),
-            "nombre": nombre
+            "nombre": nombre,
+            "codigo_usuario": codigo_usuario_out.getvalue()
         }
         
     except HTTPException:
@@ -84,9 +85,15 @@ def buscar_nombre_por_codigo_usuario(codigo_rol: str, codigo_usuario: str):
                                             str,
                                             [codigo_usuario])
         return nombre
+    except HTTPException:
+       raise
+
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        if "ORA-20002" in str(error.message):
+            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
         

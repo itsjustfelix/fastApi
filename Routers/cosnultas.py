@@ -100,7 +100,7 @@ def update_consulta(consulta: Consultas_update):
         conn.close()
 
 @router.delete("/{consulta_id}")
-def delete_consulta(consulta_id: int):
+def delete_consulta(consulta_id: str):
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -123,3 +123,34 @@ def delete_consulta(consulta_id: int):
         conn.close()
 
 
+@router.get("/propietario/{codigo_usuario}")
+def get_consulta_by_codigo_propietario(codigo_usuario: str):
+    try:
+        conn   = get_connection()
+        cursor = conn.cursor()
+        
+        datos_cursor = cursor.callfunc("PKG_CONSULTAS.fn_consultar_por_codigo_propietario", oracledb.CURSOR,[codigo_usuario]) 
+
+        if datos_cursor:
+            columnas =[col[0].lower() for col in datos_cursor.description]
+            consultas =[]
+            for fila in datos_cursor:
+                dict_fila = dict(zip(columnas,fila))
+                consultas.append(Consultas_show(**dict_fila))
+            return consultas
+        else:
+            return[]
+    except HTTPException:
+       raise
+
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        if "ORA-20002" in str(error.message):
+            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+    
