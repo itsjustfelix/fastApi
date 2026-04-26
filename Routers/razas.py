@@ -1,5 +1,5 @@
 from fastapi import APIRouter,HTTPException
-from models.razas import Razas_create, Razas_show, Razas_update
+from models.razas import Razas_create, Razas_show, Razas_update,Razas_option
 from database.conexion import get_connection
 import oracledb
 router = APIRouter(
@@ -71,7 +71,7 @@ def get_razas_by_especie(codigo_especie: str):
         conn = get_connection()
         cursor = conn.cursor()
 
-        datos_cursor = cursor.callfunc("PKG_RAZAS.FN_BUSCAR_POR_ESPECIE", 
+        datos_cursor = cursor.callfunc("PKG_RAZAS.fn_buscar_por_especie", 
                                        oracledb.CURSOR, 
                                        [codigo_especie])
         
@@ -80,11 +80,8 @@ def get_razas_by_especie(codigo_especie: str):
             razas = []
             for fila in datos_cursor:
                 dict_fila = dict(zip(columnas, fila))
-                razas.append(Razas_show(
-                    codigo=dict_fila['codigo'],
-                    nombre=dict_fila['nombre'],
-                    especie=dict_fila['nombre_especie']
-                ))
+                razas.append(Razas_option.model_validate(dict_fila))
+
             return razas
         return []
     except HTTPException:

@@ -1,11 +1,12 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class Masotas_create(BaseModel):
     nombre: str
     codigo_especie: str
     codigo_raza: str
-    cedula_propietario: str
-    link_imagen: str
+    codigo_propietario: str
+    codigo_imagen: Optional[str] = None
 
 
 class Mascotas_show(BaseModel):

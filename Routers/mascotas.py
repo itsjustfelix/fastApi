@@ -46,7 +46,8 @@ def create_mascota(mascota: Masotas_create):
             mascota.nombre,
             mascota.codigo_especie,
             mascota.codigo_raza,
-            mascota.cedula_propietario
+            mascota.codigo_propietario,
+            mascota.codigo_imagen
         ])
         
         return {"message": "Mascota creada correctamente."}
@@ -138,13 +139,41 @@ def delete_mascota(mascota_id: int):
         conn.close()
 
 
-@router.post("/upload-image")
+@router.post("/imagenes")
 async def upload_image(file: UploadFile = File(...)):
     try:
-        # Subir la imagen a Cloudinary usando tu utilidad
-        image_url = subir_imagen(file.file, "mascotas")
-        return {"message": "Imagen subida exitosamente", "url": image_url}
+       
+        res_cloudinary = subir_imagen(file.file, "mascotas")
+        
+        url = res_cloudinary["url"]
+        codigo_cloudinary = res_cloudinary["public_id"] 
+
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+
+       
+        sql = """
+            INSERT INTO imagenes_mascotas (codigo, link_imagen) 
+            VALUES (:1, :2)
+        """
+        
+        cursor.execute(sql, [codigo_cloudinary, url])
+        conn.commit()
+
+        return {
+                "message": "Imagen guardada",
+                "codigo_imagen": codigo_cloudinary,
+                "url": url
+                }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir imagen: {e}")
+        # ESTO es lo que nos dirá la verdad en el navegador
+        print(f"ERROR REAL: {str(e)}") # Esto lo verás en la terminal
+        raise HTTPException(status_code=500, detail=str(e)) # Esto lo verás en el F12
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
 
 

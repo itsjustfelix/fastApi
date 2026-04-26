@@ -7,8 +7,15 @@ class Razas_create(BaseModel):
 class Razas_show(BaseModel):
     codigo: int
     nombre: str
-    nombre_especie: str
+    nombre_especie: str 
 
+    class Config:
+        from_attributes = True
+
+class Razas_option(BaseModel):
+    codigo: int
+    nombre: str
+    
     class Config:
         from_attributes = True
 
