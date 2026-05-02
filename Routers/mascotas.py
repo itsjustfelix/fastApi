@@ -87,20 +87,22 @@ def get_mascotas_by_propietario(codigo_usuario: str):
         cursor.close()
         conn.close()
 
-@router.put("")
-def update_mascota(mascota: Mascotas_update):
+@router.put("/{codigo_mascota}")
+def update_mascota(codigo_mascota: str, mascota: Mascotas_update):
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
         cursor.callproc("PKG_MASCOTAS.PRC_ACTUALIZAR", [
-            mascota.codigo,
+            codigo_mascota,
             mascota.nombre,
             mascota.codigo_especie,
             mascota.codigo_raza
         ])
         
-        return {"message": f"Mascota {mascota.codigo} actualizada correctamente."}
+        
+        return {"message": f"Mascota {codigo_mascota} actualizada correctamente."}
+    
     except HTTPException:
        raise
 
@@ -116,7 +118,7 @@ def update_mascota(mascota: Mascotas_update):
         conn.close()
 
 @router.delete("/{mascota_id}")
-def delete_mascota(mascota_id: int):
+def delete_mascota(mascota_id: str):
     try:
         conn = get_connection()
         cursor = conn.cursor()
