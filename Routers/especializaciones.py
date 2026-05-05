@@ -17,10 +17,12 @@ def get_especializaciones():
             "PKG_ESPECIALIZACIONES.FN_CONSULTAR",
             oracledb.CURSOR
         )
-        columnas = [col[0].lower() for col in cursor_result.description]
-        datos = []
-        for fila in cursor_result:
-            datos.append(dict(zip(columnas, fila)))
+        if cursor_result:
+            columnas = [col[0].lower() for col in cursor_result.description]
+            datos = []
+            for fila in cursor_result:
+                dict_fila = dict(zip(columnas,fila))
+                datos.append(Especializaciones_show(**dict_fila))
         return datos
 
     except HTTPException:

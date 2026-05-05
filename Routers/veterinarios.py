@@ -18,11 +18,13 @@ def get_veterinarios():
             "PKG_VETERINARIOS.FN_CONSULTAR",
             oracledb.CURSOR
         )
+        if cursor_result:
 
-        columnas = [col[0].lower() for col in cursor_result.description]
-        veterinarios = []
-        for fila in cursor_result:
-            veterinarios.append(dict(zip(columnas, fila)))
+            columnas = [col[0].lower() for col in cursor_result.description]
+            veterinarios = []
+            for fila in cursor_result:
+                dict_fila = dict(zip(columnas,fila))
+                veterinarios.append(Veterinarios_show(**dict_fila))
         return veterinarios
 
     except HTTPException:

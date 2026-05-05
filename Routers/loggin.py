@@ -60,9 +60,6 @@ def login(datos : Login):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    finally:
-        cursor.close()
-        conn.close()
 
 
 def buscar_nombre_por_codigo_usuario(codigo_rol: str, codigo_usuario: str):
