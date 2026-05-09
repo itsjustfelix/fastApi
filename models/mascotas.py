@@ -6,7 +6,7 @@ class Masotas_create(BaseModel):
     codigo_especie: str
     codigo_raza: str
     codigo_propietario: str
-    codigo_imagen: Optional[str] = None
+    link_imagen: Optional[str] = None
 
 
 class Mascotas_show(BaseModel):

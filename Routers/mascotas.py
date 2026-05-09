@@ -18,12 +18,16 @@ def get_mascotas():
             "PKG_MASCOTAS.FN_CONSULTAR",
             oracledb.CURSOR
         )
+        if cursor_result:
 
-        columnas = [col[0].lower() for col in cursor_result.description]
-        mascotas = []
-        for fila in cursor_result:
-            mascotas.append(dict(zip(columnas, fila)))
-        return mascotas
+            columnas = [col[0].lower() for col in cursor_result.description]
+            mascotas = []
+            for fila in cursor_result:
+                dict_fila = dict(zip(columnas,fila))
+                mascotas.append(Mascotas_show(**dict_fila))
+            return mascotas
+        else:
+            return[]
 
     except oracledb.DatabaseError as e:
         error, = e.args
@@ -47,7 +51,7 @@ def create_mascota(mascota: Masotas_create):
             mascota.codigo_especie,
             mascota.codigo_raza,
             mascota.codigo_propietario,
-            mascota.codigo_imagen
+            mascota.link_imagen
         ])
         
         return {"message": "Mascota creada correctamente."}
@@ -148,34 +152,15 @@ async def upload_image(file: UploadFile = File(...)):
         res_cloudinary = subir_imagen(file.file, "mascotas")
         
         url = res_cloudinary["url"]
-        codigo_cloudinary = res_cloudinary["public_id"] 
-
-        
-        conn = get_connection()
-        cursor = conn.cursor()
-
-       
-        sql = """
-            INSERT INTO imagenes_mascotas (codigo, link_imagen) 
-            VALUES (:1, :2)
-        """
-        
-        cursor.execute(sql, [codigo_cloudinary, url])
-        conn.commit()
 
         return {
                 "message": "Imagen guardada",
-                "codigo_imagen": codigo_cloudinary,
                 "url": url
                 }
 
     except Exception as e:
         # ESTO es lo que nos dirá la verdad en el navegador
-        print(f"ERROR REAL: {str(e)}") # Esto lo verás en la terminal
         raise HTTPException(status_code=500, detail=str(e)) # Esto lo verás en el F12
-    finally:
-        if 'cursor' in locals(): cursor.close()
-        if 'conn' in locals(): conn.close()
 
 
 
