@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.citas import Citas_create, Citas_show, Citas_update
 from database.conexion import get_connection
+from utils.token import verificar_token
 import oracledb
 
 router = APIRouter(
@@ -9,7 +10,11 @@ router = APIRouter(
 )
 
 @router.get("")
-def get_citas():
+def get_citas(token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -44,12 +49,14 @@ def get_citas():
     
 
 @router.get("/propietario/{codigo_usuario}")
-def get_citas_by_codigo_usuario(codigo_usuario: str):
-    conn = get_connection()
-    cursor = conn.cursor()
+def get_citas_by_codigo_usuario(codigo_usuario: str,token: dict = Depends(verificar_token) ):
+    
+    if token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
 
     try:
-        
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor_result = cursor.callfunc(
             "PKG_CITAS.FN_BUSCAR_POR_CODIGO_USUARIO",
             oracledb.CURSOR,   
@@ -78,7 +85,10 @@ def get_citas_by_codigo_usuario(codigo_usuario: str):
 
 
 @router.post("")
-def create_cita(cita: Citas_create):
+def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
+
+    if  token["rol"] != "1" and token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -109,7 +119,11 @@ def create_cita(cita: Citas_create):
 
 
 @router.put("")
-def update_cita(cita: Citas_update):
+def update_cita(cita: Citas_update,token: dict = Depends(verificar_token)):
+
+    if  token["rol"] != "1" and token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -137,7 +151,13 @@ def update_cita(cita: Citas_update):
 
 
 @router.delete("/{cita_id}")
-def delete_cita(cita_id: int):   
+def delete_cita(cita_id: str,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "3" and token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
+
+
     try:
         conn = get_connection()
         cursor = conn.cursor()

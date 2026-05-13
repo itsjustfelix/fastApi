@@ -1,6 +1,7 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter,HTTPException, Depends
 from models.razas import Razas_create, Razas_show, Razas_update,Razas_option
 from database.conexion import get_connection
+from utils.token import verificar_token
 import oracledb
 router = APIRouter(
     prefix="/razas",
@@ -8,7 +9,9 @@ router = APIRouter(
 )
 
 @router.get("")
-def get_razas():
+def get_razas(token: dict = Depends(verificar_token)):
+    if token["rol"] != "1" and token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -18,12 +21,15 @@ def get_razas():
             oracledb.CURSOR
         )
 
-        columnas = [col[0].lower() for col in cursor_result.description]
-        razas = []
-        for fila in cursor_result:
-            razas.append(dict(zip(columnas, fila)))
-        return razas
-
+        if cursor_result:
+            columnas = [col[0].lower() for col in cursor_result.description]
+            razas = []
+            for fila in cursor_result:
+                razas.append(Razas_show(dict(zip(columnas,fila))))
+            return razas
+        else:
+            return []
+        
     except HTTPException:
        raise
 
@@ -39,7 +45,11 @@ def get_razas():
         conn.close()
 
 @router.post("")
-def create_raza(raza: Razas_create):
+def create_raza(raza: Razas_create,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -66,7 +76,10 @@ def create_raza(raza: Razas_create):
 
     
 @router.get("/especie/{codigo_especie}")
-def get_razas_by_especie(codigo_especie: str):
+def get_razas_by_especie(codigo_especie: str,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1" and token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -99,7 +112,9 @@ def get_razas_by_especie(codigo_especie: str):
         conn.close()
 
 @router.put("")
-def update_raza(raza: Razas_update):
+def update_raza(raza: Razas_update, token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -126,7 +141,9 @@ def update_raza(raza: Razas_update):
         conn.close()
 
 @router.delete("/{raza_id}")
-def delete_raza(raza_id: str):
+def delete_raza(raza_id: str, token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()

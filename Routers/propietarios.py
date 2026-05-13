@@ -10,6 +10,7 @@ router = APIRouter(
 
 @router.get("")
 def get_propietarios():
+    
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -56,8 +57,9 @@ def create_propietario(prop: Propietarios_create):
         cursor.callproc("PKG_PROPIETARIOS.PRC_GUARDAR",
                         [prop.cedula,
                          prop.nombreCompleto,
+                         prop.sexo,
                            prop.telefono, 
-                           prop.sexo, codigo_usuario])
+                           codigo_usuario])
         
         return {"message": "Propietario creado correctamente."}
     except HTTPException:

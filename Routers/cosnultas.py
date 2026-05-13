@@ -1,6 +1,7 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter,HTTPException, Depends
 from models.consultas import Consultas_create, Consultas_show, Consultas_update
 from database.conexion import get_connection
+from utils.token import verificar_token
 import oracledb
 router = APIRouter(
     prefix="/consultas",
@@ -8,7 +9,10 @@ router = APIRouter(
 )
 
 @router.get("")
-def get_consultas():
+def get_consultas(token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1" and token["rol"] != "2":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -39,7 +43,12 @@ def get_consultas():
         conn.close()
 
 @router.post("")
-def create_consulta(consulta: Consultas_create):
+def create_consulta(consulta: Consultas_create,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "2":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -72,7 +81,11 @@ def create_consulta(consulta: Consultas_create):
         conn.close()
 
 @router.put("")
-def update_consulta(consulta: Consultas_update):
+def update_consulta(consulta: Consultas_update, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -100,7 +113,11 @@ def update_consulta(consulta: Consultas_update):
         conn.close()
 
 @router.delete("/{consulta_id}")
-def delete_consulta(consulta_id: str):
+def delete_consulta(consulta_id: str,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -124,7 +141,12 @@ def delete_consulta(consulta_id: str):
 
 
 @router.get("/propietario/{codigo_usuario}")
-def get_consulta_by_codigo_propietario(codigo_usuario: str):
+def get_consulta_by_codigo_propietario(codigo_usuario: str,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "3" and token ["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
+
     try:
         conn   = get_connection()
         cursor = conn.cursor()

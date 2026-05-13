@@ -1,6 +1,7 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter,HTTPException, Depends
 from models.espcies import especies_create, especies_show, especies_update
 from database.conexion import get_connection
+from utils.token import verificar_token
 import oracledb
 
 router = APIRouter(
@@ -9,7 +10,10 @@ router = APIRouter(
 )
 
 @router.get("")
-def get_especies():
+def get_especies(token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1" and token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -42,7 +46,11 @@ def get_especies():
         conn.close()
 
 @router.post("")
-def create_especie(especie: especies_create):
+def create_especie(especie: especies_create,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -66,7 +74,11 @@ def create_especie(especie: especies_create):
 
 
 @router.put("")
-def update_especie(especie: especies_update):
+def update_especie(especie: especies_update,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -90,7 +102,11 @@ def update_especie(especie: especies_update):
 
 
 @router.delete("/{especie_id}")
-def delete_especie(especie_id: int):
+def delete_especie(especie_id: str, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn   = get_connection()
         cursor = conn.cursor()

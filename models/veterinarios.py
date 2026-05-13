@@ -27,4 +27,3 @@ class Veterinarios_update(BaseModel):
     telefono: str
     sexo: str
     codigo_especialidad: str
-    email: str

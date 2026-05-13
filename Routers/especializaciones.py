@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.especializaciones import Especializaciones_create, Especializaciones_show, Especializaciones_update
 from database.conexion import get_connection
+from utils.token import verificar_token
 import oracledb
 
 router = APIRouter(
@@ -9,10 +10,14 @@ router = APIRouter(
 )
 
 @router.get("")
-def get_especializaciones():
-    conn = get_connection()
-    cursor = conn.cursor()
+def get_especializaciones(token: dict = Depends(verificar_token)):
+    
+    if token["rol"] != "1" and token["rol"] != "2" and token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor_result = cursor.callfunc(
             "PKG_ESPECIALIZACIONES.FN_CONSULTAR",
             oracledb.CURSOR
@@ -40,7 +45,11 @@ def get_especializaciones():
         conn.close()
 
 @router.post("")
-def create_especializacion(especializacion: Especializaciones_create):
+def create_especializacion(especializacion: Especializaciones_create, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -66,10 +75,14 @@ def create_especializacion(especializacion: Especializaciones_create):
 
 
 @router.put("/")
-def update_especializacion(especializacion: Especializaciones_update):
-    conn = get_connection()
-    cursor = conn.cursor()
+def update_especializacion(especializacion: Especializaciones_update, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.callproc(
             "PKG_ESPECIALIZACIONES.PRC_ACTUALIZAR",
             [especializacion.codigo, especializacion.nombre]
@@ -93,10 +106,15 @@ def update_especializacion(especializacion: Especializaciones_update):
 
 
 @router.delete("/{especializacion_id}")
-def delete_especializacion(especializacion_id: int):
-    conn = get_connection()
-    cursor = conn.cursor()
+def delete_especializacion(especializacion_id: str, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
         cursor.callproc(
             "PKG_ESPECIALIZACIONES.PRC_ELIMINAR",
             [especializacion_id]

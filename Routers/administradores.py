@@ -1,7 +1,8 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.administradores import Administradores_create, Administradores_show, Administradores_update
 from database.conexion import get_connection
 from utils.passwordHasser import hashear_password
+from utils.token import verificar_token
 import oracledb
 router = APIRouter(
     prefix="/administradores",
@@ -9,8 +10,10 @@ router = APIRouter(
 )
 
 @router.get("")
-def get_administradores():
+def get_administradores(token: dict = Depends(verificar_token)):
     
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -41,7 +44,11 @@ def get_administradores():
         conn.close()
 
 @router.post("")
-def create_administrador(admin: Administradores_create):
+def create_administrador(admin: Administradores_create, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -74,7 +81,9 @@ def create_administrador(admin: Administradores_create):
         conn.close()
 
 @router.put("/")
-def update_administrador(admin: Administradores_update):
+def update_administrador(admin: Administradores_update, token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -100,7 +109,10 @@ def update_administrador(admin: Administradores_update):
         conn.close()
 
 @router.delete("/{administrador_id}")
-def delete_administrador(administrador_id: int):
+def delete_administrador(administrador_id: str, token: dict = Depends(verificar_token)):
+    
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()

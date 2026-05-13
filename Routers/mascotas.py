@@ -1,15 +1,20 @@
-from fastapi import APIRouter, File, UploadFile,HTTPException
+from fastapi import APIRouter, File, UploadFile,HTTPException, Depends
 from models.mascotas import Masotas_create, Mascotas_show, Mascotas_update
 from database.conexion import get_connection
-import oracledb
 from utils.cloudinary import subir_imagen
+from utils.token import verificar_token
+import oracledb
+
 router = APIRouter(
     prefix="/mascotas",
     tags=["mascotas"]
 )
 
 @router.get("")
-def get_mascotas():
+def get_mascotas(token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -41,7 +46,11 @@ def get_mascotas():
         conn.close()
 
 @router.post("")
-def create_mascota(mascota: Masotas_create):
+def create_mascota(mascota: Masotas_create,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1" and token["rol"]!= "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -63,10 +72,13 @@ def create_mascota(mascota: Masotas_create):
 
 
 @router.get("/propietario/{codigo_usuario}")
-def get_mascotas_by_propietario(codigo_usuario: str):
+def get_mascotas_by_propietario(codigo_usuario: str,token: dict = Depends(verificar_token)):
+    if token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     conn = get_connection()
     cursor = conn.cursor()
-
+    
     try:
         cursor_result = cursor.callfunc(
             "PKG_MASCOTAS.FN_CONSULTAR_POR_PROPIETARIO",
@@ -92,7 +104,11 @@ def get_mascotas_by_propietario(codigo_usuario: str):
         conn.close()
 
 @router.put("/{codigo_mascota}")
-def update_mascota(codigo_mascota: str, mascota: Mascotas_update):
+def update_mascota(codigo_mascota: str, mascota: Mascotas_update,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "3" and token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -122,7 +138,9 @@ def update_mascota(codigo_mascota: str, mascota: Mascotas_update):
         conn.close()
 
 @router.delete("/{mascota_id}")
-def delete_mascota(mascota_id: str):
+def delete_mascota(mascota_id: str, token: dict = Depends(verificar_token)):
+    if token["rol"] != "3" and token["rol"]!="1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -146,7 +164,10 @@ def delete_mascota(mascota_id: str):
 
 
 @router.post("/imagenes")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(file: UploadFile = File(...),token: dict = Depends(verificar_token)):
+    if token["rol"] != "3":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     try:
        
         res_cloudinary = subir_imagen(file.file, "mascotas")

@@ -1,7 +1,8 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter,HTTPException, Depends
 from models.veterinarios import Veterinarios_create, Veterinarios_show, Veterinarios_update
 from database.conexion import get_connection
 from utils.passwordHasser import hashear_password
+from utils.token import verificar_token
 import oracledb
 router = APIRouter(
     prefix="/veterinarios",
@@ -9,7 +10,10 @@ router = APIRouter(
 )
 
 @router.get("")
-def get_veterinarios():
+def get_veterinarios(token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
+    
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -42,7 +46,9 @@ def get_veterinarios():
         conn.close()
 
 @router.post("")
-def create_veterinario(veterinario: Veterinarios_create):
+def create_veterinario(veterinario: Veterinarios_create,token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn   = get_connection()
         cursor = conn.cursor()
@@ -78,9 +84,10 @@ def create_veterinario(veterinario: Veterinarios_create):
         cursor.close()
         conn.close()
 
-
 @router.put("")
-def update_veterinario(veterinario: Veterinarios_update):
+def update_veterinario(veterinario: Veterinarios_update,token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -109,7 +116,9 @@ def update_veterinario(veterinario: Veterinarios_update):
         conn.close()
 
 @router.delete("/{veterinario_id}")
-def delete_veterinario(veterinario_id: int):
+def delete_veterinario(veterinario_id: str,token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(status_code=403, detail="Rol no autorizado")
     try:
         conn = get_connection()
         cursor = conn.cursor()
