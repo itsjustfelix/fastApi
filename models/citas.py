@@ -4,6 +4,7 @@ class Citas_create(BaseModel):
     fecha: str
     hora: str
     codigoMascota: str
+    codigoEspecializacion: str
     cedulaVeterinario: str
 
 class Citas_show(BaseModel):
@@ -13,6 +14,7 @@ class Citas_show(BaseModel):
     nombre_mascota: str
     nombre_veterinario: str
     estado_cita: str
+    nombre_especializacion: str
 
     class Config:
         from_attributes = True
