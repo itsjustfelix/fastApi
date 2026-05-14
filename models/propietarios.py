@@ -6,7 +6,7 @@ class Propietarios_create(BaseModel):
     nombreCompleto : str
     telefono : str
     sexo : str
-    email : str
+    correo : str
     contraseña : str
     rol : str = "3"
 

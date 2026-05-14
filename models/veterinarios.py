@@ -20,6 +20,14 @@ class Veterinarios_show(BaseModel):
     class Config:
         from_attributes = True
 
+class Veterinarios_show_option(BaseModel):
+    cedula: str
+    nombre_completo: str
+    codigo_especializacion: str
+
+    class Config:
+        from_attributes = True
+
 
 class Veterinarios_update(BaseModel):
     cedula: str

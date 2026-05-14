@@ -50,7 +50,7 @@ def create_propietario(prop: Propietarios_create):
 
         codigo_usuario = cursor.callfunc("PKG_USUARIO.FN_guardar_usuario",
                                          str,
-                                         [prop.email, 
+                                         [prop.correo, 
                                           hashear_password(prop.contraseña), 
                                           prop.rol])
 
@@ -104,7 +104,7 @@ def update_propietario(propietario: Propietarios_update):
         conn.close()
 
 @router.delete("/{propietario_id}")
-def delete_propietario(propietario_id: int):
+def delete_propietario(propietario_id: str):
     try:
         conn = get_connection()
         cursor = conn.cursor()

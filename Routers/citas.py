@@ -97,7 +97,8 @@ def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
             cita.fecha,
             cita.hora,
             cita.codigoMascota,
-            cita.cedulaVeterinario
+            cita.cedulaVeterinario,
+            cita.codigoEspecializacion
         ])
         
         return {"message": "Cita creada correctamente."}
@@ -162,7 +163,7 @@ def delete_cita(cita_id: str,token: dict = Depends(verificar_token)):
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.callproc("PKG_CITAS.PRC_ELIMINAR", [cita_id])
+        cursor.callproc("PKG_CITAS.PRC_ELIMINAR",[cita_id])
         
         return {"message": "Cita cancelada correctamente."}
     except HTTPException:
@@ -172,10 +173,11 @@ def delete_cita(cita_id: str,token: dict = Depends(verificar_token)):
         error, = e.args
         if "ORA-20002" in str(error.message):
             raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail="Error en la base de datos")
+        raise HTTPException(status_code=500, detail= f"Error en la base de datos {e}")
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        raise HTTPException(status_code=500, detail=str(error.message))
 
     finally:
         cursor.close()
