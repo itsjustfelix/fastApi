@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile,HTTPException, Depends
-from models.mascotas import Masotas_create, Mascotas_show, Mascotas_update
+from models.mascotas import Mascotas_create, Mascotas_show, Mascotas_update
 from database.conexion import get_connection
 from utils.cloudinary import subir_imagen
 from utils.token import verificar_token
@@ -46,7 +46,7 @@ def get_mascotas(token: dict = Depends(verificar_token)):
         conn.close()
 
 @router.post("")
-def create_mascota(mascota: Masotas_create,token: dict = Depends(verificar_token)):
+def create_mascota(mascota: Mascotas_create,token: dict = Depends(verificar_token)):
 
     if token["rol"] != "1" and token["rol"]!= "3":
         raise HTTPException(status_code=403, detail="Rol no autorizado")
@@ -180,8 +180,8 @@ async def upload_image(file: UploadFile = File(...),token: dict = Depends(verifi
                 }
 
     except Exception as e:
-        # ESTO es lo que nos dirá la verdad en el navegador
-        raise HTTPException(status_code=500, detail=str(e)) # Esto lo verás en el F12
+        
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
