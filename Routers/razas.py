@@ -2,6 +2,7 @@ from fastapi import APIRouter,HTTPException, Depends
 from models.razas import Razas_create, Razas_show, Razas_update,Razas_option
 from database.conexion import get_connection
 from utils.token import verificar_token
+from utils.error_structure import error_response
 import oracledb
 router = APIRouter(
     prefix="/razas",
@@ -11,24 +12,20 @@ router = APIRouter(
 @router.get("")
 def get_razas(token: dict = Depends(verificar_token)):
     if token["rol"] != "1" and token["rol"] != "3":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
-    conn = get_connection()
-    cursor = conn.cursor()
-
+        raise HTTPException(status_code=403, detail=error_response("FORBIDDEN", "Rol no autorizado"))
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor_result = cursor.callfunc(
             "PKG_RAZAS.FN_CONSULTAR",
             oracledb.CURSOR
         )
 
-        if cursor_result:
-            columnas = [col[0].lower() for col in cursor_result.description]
-            razas = []
-            for fila in cursor_result:
-                razas.append(Razas_show(dict(zip(columnas,fila))))
-            return razas
-        else:
-            return []
+        columnas = [col[0].lower() for col in cursor_result.description]
+        razas = []
+        for fila in cursor_result:
+            razas.append(Razas_show.model_validate(dict(zip(columnas,fila))))
+        return razas
         
     except HTTPException:
        raise
@@ -36,19 +33,55 @@ def get_razas(token: dict = Depends(verificar_token)):
     except oracledb.DatabaseError as e:
         error, = e.args
         if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
         conn.close()
 
-@router.post("")
+@router.get("/especie/{codigo_especie}")
+def get_razas_by_especie(codigo_especie: str,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1" and token["rol"] != "3":
+        raise HTTPException(status_code=403, detail=error_response("FORBIDDEN", "Rol no autorizado"))
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        datos_cursor = cursor.callfunc("PKG_RAZAS.fn_buscar_por_especie", 
+                                       oracledb.CURSOR, 
+                                       [codigo_especie])
+        
+        columnas = [col[0].lower() for col in datos_cursor.description]
+        razas = []
+        for fila in datos_cursor:
+            razas.append(Razas_option.model_validate(dict(zip(columnas, fila))))
+        return razas
+
+    except HTTPException:
+       raise
+
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        if "ORA-20002" in str(error.message):
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.post("",status_code=201)
 def create_raza(raza: Razas_create,token: dict = Depends(verificar_token)):
 
     if token["rol"] != "1":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
+        raise HTTPException(
+            status_code=403, 
+            detail=error_response("FORBIDDEN", "Rol no autorizado")
+        )
 
     try:
         conn = get_connection()
@@ -64,57 +97,26 @@ def create_raza(raza: Razas_create,token: dict = Depends(verificar_token)):
        raise
 
     except oracledb.DatabaseError as e:
+        conn.rollback()
         error, = e.args
         if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
         conn.close()
 
-    
-@router.get("/especie/{codigo_especie}")
-def get_razas_by_especie(codigo_especie: str,token: dict = Depends(verificar_token)):
 
-    if token["rol"] != "1" and token["rol"] != "3":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        datos_cursor = cursor.callfunc("PKG_RAZAS.fn_buscar_por_especie", 
-                                       oracledb.CURSOR, 
-                                       [codigo_especie])
-        
-        if datos_cursor:
-            columnas = [col[0].lower() for col in datos_cursor.description]
-            razas = []
-            for fila in datos_cursor:
-                dict_fila = dict(zip(columnas, fila))
-                razas.append(Razas_option.model_validate(dict_fila))
-
-            return razas
-        return []
-    except HTTPException:
-       raise
-
-    except oracledb.DatabaseError as e:
-        error, = e.args
-        if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
-
-@router.put("")
+@router.put("", status_code=200)
 def update_raza(raza: Razas_update, token: dict = Depends(verificar_token)):
     if token["rol"] != "1":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
+        raise HTTPException(
+            status_code=403, 
+            detail=error_response("FORBIDDEN", "Rol no autorizado")
+        )
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -130,12 +132,14 @@ def update_raza(raza: Razas_update, token: dict = Depends(verificar_token)):
        raise
 
     except oracledb.DatabaseError as e:
+        conn.rollback()
         error, = e.args
         if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
         conn.close()
@@ -143,7 +147,7 @@ def update_raza(raza: Razas_update, token: dict = Depends(verificar_token)):
 @router.delete("/{raza_id}")
 def delete_raza(raza_id: str, token: dict = Depends(verificar_token)):
     if token["rol"] != "1":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
+        raise HTTPException(status_code=403, detail=error_response("FORBIDDEN", "Rol no autorizado"))
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -153,14 +157,13 @@ def delete_raza(raza_id: str, token: dict = Depends(verificar_token)):
         return {"message": "Raza desactivada correctamente."}
     except HTTPException:
        raise
-
     except oracledb.DatabaseError as e:
         error, = e.args
         if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
         conn.close()

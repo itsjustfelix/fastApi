@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from models.citas import Citas_create, Citas_show, Citas_update
 from database.conexion import get_connection
 from utils.token import verificar_token
+from utils.error_structure import error_response
 import oracledb
 
 router = APIRouter(
@@ -13,50 +14,56 @@ router = APIRouter(
 def get_citas(token: dict = Depends(verificar_token)):
 
     if token["rol"] != "1":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
+        raise HTTPException(
+            status_code=403, 
+            detail=error_response("FORBIDDEN", "No autorizado para ver citas")
+        )
     
     try:
         conn = get_connection()
         cursor = conn.cursor()
         
-        datos_cursor = cursor.callfunc("PKG_CITAS.FN_CONSULTAR", oracledb.CURSOR, [])
+        datos_cursor = cursor.callfunc(
+            "PKG_CITAS.FN_CONSULTAR",
+            oracledb.CURSOR,
+            []
+        )
 
-        if datos_cursor:
-            columnas = [col[0].lower() for col in datos_cursor.description]
-            citas = []
-            for fila in datos_cursor:
-                dict_fila = dict(zip(columnas,fila))
-                citas.append(Citas_show(**dict_fila))
-            return citas
-        else:
-            return []
-
+        columnas = [col[0].lower() for col in datos_cursor.description]
+        citas = []
+        for fila in datos_cursor:
+            citas.append(Citas_show.model_validate(dict(zip(columnas,fila))))
+        return citas
     except HTTPException:
-       raise
-
+        raise
     except oracledb.DatabaseError as e:
         error, = e.args
-        if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail="Error en la base de datos")
-
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}])
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("SERVER_ERROR", "Error interno del servidor", [{"message": str(e)}])
+        )
     finally:
         cursor.close()
         conn.close()
-    
 
 @router.get("/propietario/{codigo_usuario}")
 def get_citas_by_codigo_usuario(codigo_usuario: str,token: dict = Depends(verificar_token) ):
     
     if token["rol"] != "3":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para ver las citas")
+        )
 
     try:
         conn = get_connection()
         cursor = conn.cursor()
+
         cursor_result = cursor.callfunc(
             "PKG_CITAS.FN_BUSCAR_POR_CODIGO_USUARIO",
             oracledb.CURSOR,   
@@ -66,34 +73,40 @@ def get_citas_by_codigo_usuario(codigo_usuario: str,token: dict = Depends(verifi
         columnas = [col[0].lower() for col in cursor_result.description]
         citas = []
         for fila in cursor_result:
-            citas.append(dict(zip(columnas, fila)))
+            citas.append(Citas_show.model_validate(dict(zip(columnas, fila))))
         return citas
 
     except HTTPException:
         raise
-
     except oracledb.DatabaseError as e:
         error, = e.args
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos {error.message}")
-
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}])
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("SERVER_ERROR", "Error interno del servidor", [{"message": str(e)}])
+        )
     finally:
         cursor.close()
         conn.close()
 
-
-@router.post("")
+@router.post("", status_code=201)
 def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
 
     if  token["rol"] != "1" and token["rol"] != "3":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para crear citas")
+        )
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.callproc("PKG_CITAS.PRC_GUARDAR", [
+        cursor.callproc(
+            "PKG_CITAS.PRC_GUARDAR", [
             cita.fecha,
             cita.hora,
             cita.codigoMascota,
@@ -106,24 +119,29 @@ def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
        raise
 
     except oracledb.DatabaseError as e:
+        conn.rollback()
         error, = e.args
         if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail="Error en la base de datos")
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        else:   
+            raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
 
     finally:
         cursor.close()
         conn.close()
 
-
-@router.put("")
+@router.put("", status_code=200)
 def update_cita(cita: Citas_update,token: dict = Depends(verificar_token)):
 
     if  token["rol"] != "1" and token["rol"] != "3":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para actualizar citas")
+        )
 
     try:
         conn = get_connection()
@@ -140,24 +158,26 @@ def update_cita(cita: Citas_update,token: dict = Depends(verificar_token)):
        raise
 
     except oracledb.DatabaseError as e:
+        conn.rollback()
         error, = e.args
         if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos {e}")
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
         conn.close()
 
-
-@router.delete("/{cita_id}")
+@router.delete("/{cita_id}", status_code=200)
 def delete_cita(cita_id: str,token: dict = Depends(verificar_token)):
 
     if token["rol"] != "3" and token["rol"] != "1":
-        raise HTTPException(status_code=403, detail="Rol no autorizado")
-
-
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para eliminar citas")
+        )
 
     try:
         conn = get_connection()
@@ -168,18 +188,14 @@ def delete_cita(cita_id: str,token: dict = Depends(verificar_token)):
         return {"message": "Cita cancelada correctamente."}
     except HTTPException:
        raise
-
     except oracledb.DatabaseError as e:
+        conn.rollback()
         error, = e.args
         if "ORA-20002" in str(error.message):
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-        raise HTTPException(status_code=500, detail= f"Error en la base de datos {e}")
-
-    except oracledb.DatabaseError as e:
-        error, = e.args
-        raise HTTPException(status_code=500, detail=str(error.message))
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        else:
+            raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
 
     finally:
         cursor.close()
         conn.close()
-
