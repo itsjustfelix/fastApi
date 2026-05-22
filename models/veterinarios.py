@@ -54,15 +54,15 @@ class Veterinarios_create(BaseModel):
             raise ValueError('El sexo debe ser "M" o "F"')
         return value
     
-    @field_validator('correo')
+    @field_validator('email')
     @classmethod
-    def validate_correo(cls, value):
+    def validate_email(cls, value):
         if not value:
-            raise ValueError('El correo es obligatorio')
+            raise ValueError('El email es obligatorio')
         try:
             validate_email(value)
         except EmailNotValidError:
-            raise ValueError("El correo electrónico no es válido")
+            raise ValueError("El email electrónico no es válido")
         return value
     
     @field_validator('contraseña')
