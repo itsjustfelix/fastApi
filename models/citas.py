@@ -54,6 +54,16 @@ class Citas_show(BaseModel):
     class Config:
         from_attributes = True
 
+class Citas_show_veterinario(BaseModel):
+    codigo: str
+    fecha: str
+    hora: str
+    nombre_mascota: str
+    estado_cita: str
+    
+    class Config:
+        from_attributes = True
+
 class Citas_update(BaseModel):
     codigo : str
     fecha: str

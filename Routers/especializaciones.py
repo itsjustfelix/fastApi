@@ -64,6 +64,7 @@ def create_especializacion(especializacion: Especializaciones_create, token: dic
             "PKG_ESPECIALIZACIONES.PRC_GUARDAR",
             [especializacion.nombre]
         )
+        conn.commit()
         return {"message": "Especialización creada exitosamente"}
 
     except HTTPException:
@@ -155,6 +156,4 @@ def delete_especializacion(especializacion_id: str, token: dict = Depends(verifi
         raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
-        conn.close()
-
-        
+        conn.close()    

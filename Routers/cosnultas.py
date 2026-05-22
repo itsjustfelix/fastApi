@@ -109,7 +109,7 @@ def create_consulta(consulta: Consultas_create,token: dict = Depends(verificar_t
             consulta.codigo_cita,
             consulta.codigo_especializacion
         ])
-        
+        conn.commit()
         return {"message": "Consulta registrada correctamente."}
     except HTTPException:
         raise
@@ -150,7 +150,7 @@ def update_consulta(consulta: Consultas_update, token: dict = Depends(verificar_
             consulta.diagnostico,
             consulta.tratamiento
         ])
-        
+        conn.commit()
         return {"message": "Consulta actualizada correctamente."}
     except HTTPException:
         raise
@@ -185,7 +185,7 @@ def delete_consulta(consulta_id: str,token: dict = Depends(verificar_token)):
         cursor = conn.cursor()
 
         cursor.callproc("PKG_CONSULTAS.PRC_ELIMINAR", [consulta_id])
-        
+        conn.commit()
         return {"message": "Consulta desactivada correctamente."}
     except HTTPException:
        raise

@@ -75,7 +75,7 @@ def create_administrador(admin: Administradores_create, token: dict = Depends(ve
                          admin.nombreCompleto,
                          admin.telefono,
                          codigo_usuario])
-        
+        conn.commit()
         return {"message": "Administrador creado correctamente."}
 
     except HTTPException:
@@ -117,13 +117,12 @@ def update_administrador(admin: Administradores_update, token: dict = Depends(ve
                         [admin.cedula,
                          admin.nombreCompleto,
                          admin.telefono])
+        conn.commit()
         
         return {"message": "Administrador actualizado correctamente."}
     except HTTPException:
        raise
-
-    except HTTPException:
-        raise
+    
     except oracledb.DatabaseError as e:
         conn.rollback()
         error, = e.args
@@ -153,7 +152,7 @@ def delete_administrador(administrador_id: str, token: dict = Depends(verificar_
         cursor = conn.cursor()
 
         cursor.callproc("PKG_ADMINISTRADORES.PRC_ELIMINAR", [administrador_id])
-        
+        conn.commit()
         return {"message": "Administrador eliminado correctamente."}
     except HTTPException:
         raise

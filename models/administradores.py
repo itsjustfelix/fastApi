@@ -9,7 +9,7 @@ class Administradores_create(BaseModel):
     telefono: str
     email: EmailStr
     contraseña: str
-    rol : str = "1"
+    rol : str = "1" # Asignamos el rol de administrador por defecto - Nunca cambiar este valor!!!! cambiar solamente si se cambia en la base de datos
 
     @field_validator('cedula')
     @classmethod
@@ -44,16 +44,7 @@ class Administradores_create(BaseModel):
             raise ValueError('El teléfono debe contener solo números')
         return value
     
-    @field_validator('sexo')
-    @classmethod
-    def validate_sexo(cls, value):
-        if not value:
-            raise ValueError('El sexo es obligatorio')
-        if value not in ['M', 'F']:
-            raise ValueError('El sexo debe ser "M" o "F"')
-        return value
-    
-    @field_validator('correo')
+    @field_validator('email')
     @classmethod
     def validate_correo(cls, value):
         if not value:
@@ -91,7 +82,6 @@ class Administradores_update(BaseModel):
     cedula: str
     nombreCompleto: str
     telefono: str
-    sexo: str
 
     @field_validator('nombreCompleto')
     @classmethod
@@ -114,12 +104,4 @@ class Administradores_update(BaseModel):
         if not value.isdigit():
             raise ValueError('El teléfono debe contener solo números')
         return value
-    
-    @field_validator('sexo')
-    @classmethod
-    def validate_sexo(cls, value):
-        if not value:
-            raise ValueError('El sexo es obligatorio')
-        if value not in ['M', 'F']:
-            raise ValueError('El sexo debe ser "M" o "F"')
-        return value
+

@@ -98,7 +98,7 @@ def create_mascota(mascota: Mascotas_create,token: dict = Depends(verificar_toke
             mascota.codigo_propietario,
             mascota.link_imagen
         ])
-        
+        conn.commit()
         return {"message": "Mascota creada correctamente."}
     except oracledb.DatabaseError as e:
         conn.rollback()
@@ -126,7 +126,7 @@ def update_mascota(codigo_mascota: str, mascota: Mascotas_update,token: dict = D
             mascota.codigo_especie,
             mascota.codigo_raza
         ])
-        
+        conn.commit()
         return {"message":"Mascota actualizada correctamente."}
     
     except HTTPException:
@@ -158,7 +158,7 @@ def delete_mascota(mascota_id: str, token: dict = Depends(verificar_token)):
         cursor = conn.cursor()
 
         cursor.callproc("PKG_MASCOTAS.PRC_ELIMINAR", [mascota_id])
-        
+        conn.commit()
         return {"message": "Mascota eliminada correctamente."}
     except HTTPException:
        raise

@@ -91,7 +91,7 @@ def create_raza(raza: Razas_create,token: dict = Depends(verificar_token)):
             raza.nombre,
             raza.codigo_especie
         ])
-        
+        conn.commit()
         return {"message": "Raza creada correctamente."}
     except HTTPException:
        raise
@@ -126,7 +126,7 @@ def update_raza(raza: Razas_update, token: dict = Depends(verificar_token)):
             raza.nombre,
             raza.codigo_especie
         ])
-        
+        conn.commit()
         return {"message": "Raza actualizada correctamente."}
     except HTTPException:
        raise
@@ -153,7 +153,7 @@ def delete_raza(raza_id: str, token: dict = Depends(verificar_token)):
         cursor = conn.cursor()
 
         cursor.callproc("PKG_RAZAS.PRC_ELIMINAR", [raza_id])
-        
+        conn.commit()
         return {"message": "Raza desactivada correctamente."}
     except HTTPException:
        raise

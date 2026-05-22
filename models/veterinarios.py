@@ -10,7 +10,7 @@ class Veterinarios_create(BaseModel):
     codigo_especialidad: str
     email: EmailStr
     contraseña: str
-    rol: str = "2"
+    rol: str = "2" # Asignamos el rol de administrador por defecto - Nunca cambiar este valor!!!! cambiar solamente si se cambia en la base de datos
 
     @field_validator('cedula')
     @classmethod

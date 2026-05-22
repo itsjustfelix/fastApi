@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.citas import Citas_create, Citas_show, Citas_update
+from models.citas import Citas_create, Citas_show,Citas_show_veterinario, Citas_update
 from database.conexion import get_connection
 from utils.token import verificar_token
 from utils.error_structure import error_response
@@ -93,6 +93,48 @@ def get_citas_by_codigo_usuario(codigo_usuario: str,token: dict = Depends(verifi
         cursor.close()
         conn.close()
 
+@router.get("/{cedula_veterinario}")
+def get_citas_by_cedula_veterinario(cedula_veterinario: str, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "2":
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para ver citas")
+        )
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor_result = cursor.callfunc(
+            "PKG_CITAS.FN_BUSCAR_POR_CEDULA_VETERINARIO",
+            oracledb.CURSOR,
+            [cedula_veterinario]
+        )
+
+        columnas = [col[0].lower() for col in cursor_result.description]
+        citas = []
+        for fila in cursor_result:
+            citas.append(Citas_show_veterinario.model_validate(dict(zip(columnas, fila))))
+        return citas
+
+    except HTTPException:
+        raise
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}])
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("SERVER_ERROR", "Error interno del servidor", [{"message": str(e)}])
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.post("", status_code=201)
 def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
 
@@ -113,7 +155,7 @@ def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
             cita.cedulaVeterinario,
             cita.codigoEspecializacion
         ])
-        
+        conn.commit()
         return {"message": "Cita creada correctamente."}
     except HTTPException:
        raise
@@ -152,7 +194,7 @@ def update_cita(cita: Citas_update,token: dict = Depends(verificar_token)):
             cita.fecha,
             cita.hora
         ])
-        
+        conn.commit()
         return {"message": "Cita actualizada correctamente."}
     except HTTPException:
        raise
@@ -184,6 +226,7 @@ def delete_cita(cita_id: str,token: dict = Depends(verificar_token)):
         cursor = conn.cursor()
 
         cursor.callproc("PKG_CITAS.PRC_ELIMINAR",[cita_id])
+        conn.commit()
         
         return {"message": "Cita cancelada correctamente."}
     except HTTPException:

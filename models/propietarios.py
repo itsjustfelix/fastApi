@@ -10,7 +10,7 @@ class Propietarios_create(BaseModel):
     sexo : str
     correo : EmailStr
     contraseña : str
-    rol : str = "3"
+    rol : str = "3" # Asignamos el rol de administrador por defecto - Nunca cambiar este valor!!!! cambiar solamente si se cambia en la base de datos
 
     @field_validator('cedula')
     @classmethod

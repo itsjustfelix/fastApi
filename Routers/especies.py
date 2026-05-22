@@ -58,7 +58,7 @@ def create_especie(especie: especies_create,token: dict = Depends(verificar_toke
         cursor = conn.cursor()
 
         cursor.callproc("PKG_ESPECIES.PRC_GUARDAR", [especie.nombre])
-        
+        conn.commit()
         return {"message": "Especie creada correctamente."}
     except HTTPException:
        raise
@@ -90,7 +90,7 @@ def update_especie(especie: especies_update,token: dict = Depends(verificar_toke
         cursor = conn.cursor()
 
         cursor.callproc("PKG_ESPECIES.PRC_ACTUALIZAR", [especie.codigo, especie.nombre])
-        
+        conn.commit()
         return {"message": "Especie actualizada correctamente."}
     except HTTPException:
        raise
@@ -119,7 +119,7 @@ def delete_especie(especie_id: str, token: dict = Depends(verificar_token)):
         cursor = conn.cursor()
 
         cursor.callproc("PKG_ESPECIES.PRC_ELIMINAR", [especie_id])
-        
+        conn.commit()
         return {"message": "Especie eliminada correctamente."}
     except HTTPException:
        raise

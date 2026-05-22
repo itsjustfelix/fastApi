@@ -108,17 +108,19 @@ def create_veterinario(veterinario: Veterinarios_create,token: dict = Depends(ve
             veterinario.codigo_especialidad,
             v_codigo_usuario
         ])
-        
+        conn.commit()
         return {"message": "Veterinario creado correctamente."}
     except HTTPException:
        raise
 
     except oracledb.DatabaseError as e:
+        conn.rollback()
         error, = e.args
         if "ORA-20002" in str(error.message):
             raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
         raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
     except Exception as e:
+        conn.rollback()
         raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
@@ -139,17 +141,19 @@ def update_veterinario(veterinario: Veterinarios_update,token: dict = Depends(ve
             veterinario.telefono,
             veterinario.codigo_especialidad
         ])
-        
+        conn.commit()   
         return {"message": "Veterinario  actualizado correctamente."}
     except HTTPException:
        raise
 
     except oracledb.DatabaseError as e:
+        conn.rollback()
         error, = e.args
         if "ORA-20002" in str(error.message):
             raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
         raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
     except Exception as e:
+        conn.rollback()
         raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
@@ -164,7 +168,7 @@ def delete_veterinario(veterinario_id: str,token: dict = Depends(verificar_token
         cursor = conn.cursor()
 
         cursor.callproc("PKG_VETERINARIOS.PRC_ELIMINAR", [veterinario_id])
-        
+        conn.commit()
         return {"message": "Veterinario desactivado correctamente."}
     except HTTPException:
        raise
