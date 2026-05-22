@@ -42,8 +42,7 @@ def login(datos : Login, response: Response):
         )
 
         token_refresco = crear_token_refresco(
-            codigo_usuario_out.getvalue(),
-            codigo_rol_out.getvalue()
+            codigo_usuario_out.getvalue()
         )
 
         response.set_cookie(
@@ -134,6 +133,43 @@ def refresh_token(request: Request):
     finally:
         cursor.close()
         conn.close()
+
+
+@router.post("/logout", status_code=200)
+def logout(request: Request, response: Response):
+    try:
+        refresh_token_cookie = request.cookies.get("token_refresco")
+
+        if refresh_token_cookie:
+            payload = verificar_token_refresh(refresh_token_cookie)
+            codigo_usuario = payload.get("sub")
+
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            cursor.callproc("PKG_USUARIO.prc_eliminar_refresh_token", [codigo_usuario])
+            conn.commit()
+
+        response.delete_cookie(key="token_refresco")
+        return {"message": "Logout exitoso"}
+    except HTTPException:
+        raise
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}])
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("INTERNAL_SERVER_ERROR", str(e))
+        )
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
 
 def buscar_nombre_por_codigo_usuario(codigo_rol: str, codigo_usuario: str):
     try:
