@@ -49,7 +49,7 @@ def login(datos : Login, response: Response):
             key="token_refresco",
             value=token_refresco,
             httponly=True,
-            samesite="strict",
+            samesite="lax",
             max_age=7*24*60*60
         ) 
 
@@ -87,6 +87,7 @@ def refresh_token(request: Request):
     try:
         
         refresh_token_cookie = request.cookies.get("token_refresco")
+        print("Token de refresco recibido:", refresh_token_cookie)  # Debug: Verificar que el token se recibe correctamente
 
         if not refresh_token_cookie:
             raise HTTPException(
@@ -131,8 +132,8 @@ def refresh_token(request: Request):
             detail=error_response("INTERNAL_SERVER_ERROR", str(e))
         )
     finally:
-        cursor.close()
-        conn.close()
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
 
 
 @router.post("/logout", status_code=200)
