@@ -93,7 +93,7 @@ def get_citas_by_codigo_usuario(codigo_usuario: str,token: dict = Depends(verifi
         cursor.close()
         conn.close()
 
-@router.get("/{cedula_veterinario}")
+@router.get("/veterinario/{cedula_veterinario}")
 def get_citas_by_cedula_veterinario(cedula_veterinario: str, token: dict = Depends(verificar_token)):
 
     if token["rol"] != "2":
@@ -134,6 +134,51 @@ def get_citas_by_cedula_veterinario(cedula_veterinario: str, token: dict = Depen
     finally:
         cursor.close()
         conn.close()
+
+@router.get("/ocupadas")
+def get_citas_ocupadas(cedula_veterinario: str, fecha: str, token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "2" and token["rol"] != "1" and token["rol"] != "3":
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para ver las horas ocupadas", [token["rol"]])
+    )
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor_result = cursor.callfunc(
+            "PKG_CITAS.fn_obtener_horas_ocupadas",
+            oracledb.CURSOR,
+            [cedula_veterinario, fecha]
+        )
+
+        columnas = [col[0].lower() for col in cursor_result.description]
+        horas = []
+        for fila in cursor_result:
+            dato = dict(zip(columnas, fila))
+            horas.append(dato["hora"])
+        return horas
+
+    except HTTPException:
+        raise
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}])
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("SERVER_ERROR", "Error interno del servidor", [{"message": str(e)}])
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+
 
 @router.post("", status_code=201)
 def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
