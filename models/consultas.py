@@ -1,4 +1,5 @@
 from pydantic import BaseModel, field_validator
+from typing import Optional
 
 class Consultas_create(BaseModel):
     fecha: str
@@ -72,6 +73,7 @@ class Consultas_show(BaseModel):
     descripcion :str
     diagnostico: str
     tratamiento: str
+    codigo_mascota : Optional[str] = None
     nombre_mascota: str
     nombre_veterinario: str
     nombre_especializacion: str

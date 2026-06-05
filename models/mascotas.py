@@ -26,8 +26,17 @@ class Mascotas_show(BaseModel):
     nombre_especie: str
     codigo_raza: str
     nombre_raza: str
+    nombre_propietario: Optional[str] = None
     link_imagen: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+
+class Mascotas_show_Cita(BaseModel):
+    nombre_especie: str
+    nombre_raza: str
+    nombre_propietario: str
+    link_imagen: Optional[str] = None
     class Config:
         from_attributes = True
 

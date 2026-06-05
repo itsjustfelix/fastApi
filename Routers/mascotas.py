@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile,HTTPException, Depends
-from models.mascotas import Mascotas_create, Mascotas_show, Mascotas_update
+from models.mascotas import Mascotas_create, Mascotas_show, Mascotas_update, Mascotas_show_Cita
 from database.conexion import get_connection
 from utils.cloudinary import subir_imagen
 from utils.token import verificar_token
@@ -24,7 +24,7 @@ def get_mascotas(token: dict = Depends(verificar_token)):
         conn = get_connection()
         cursor = conn.cursor()
         cursor_result = cursor.callfunc(
-            "PKG_MASCOTAS.FN_CONSULTAR",
+            "PKG_MASCOTAS.fn_consultar",
             oracledb.CURSOR
         )
         
@@ -47,7 +47,7 @@ def get_mascotas(token: dict = Depends(verificar_token)):
 
 @router.get("/propietario/{codigo_usuario}")
 def get_mascotas_by_propietario(codigo_usuario: str,token: dict = Depends(verificar_token)):
-    if token["rol"] != "3":
+    if token["rol"] != "3" :
         raise HTTPException(status_code=403, detail=error_response("FORBIDDEN", "Rol no autorizado"))
     
     
@@ -80,6 +80,42 @@ def get_mascotas_by_propietario(codigo_usuario: str,token: dict = Depends(verifi
         cursor.close()
         conn.close()
 
+
+@router.get("/{codigo_mascota}")
+def get_mascota(codigo_mascota: str,token: dict = Depends(verificar_token)):
+
+    if token["rol"] != "1" and token["rol"] != "2":
+        raise HTTPException(
+            status_code=403, 
+            detail=error_response("FORBIDDEN", "Rol no autorizado")
+        )
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor_result = cursor.callfunc(
+            "PKG_MASCOTAS.FN_CONSULTAR_POR_CODIGO",
+            oracledb.CURSOR,
+            [codigo_mascota]
+        )
+        
+        columnas = [col[0].lower() for col in cursor_result.description]
+        fila = cursor_result.fetchone()
+        if fila:
+            mascota = Mascotas_show_Cita.model_validate(dict(zip(columnas,fila)))
+            return mascota
+        else:
+            raise HTTPException(status_code=404, detail=error_response("NOT_FOUND", "Mascota no encontrada"))
+    except HTTPException:
+       raise
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
+    finally:
+        cursor.close()
+        conn.close()
 @router.post("",status_code=201)
 def create_mascota(mascota: Mascotas_create,token: dict = Depends(verificar_token)):
 
@@ -178,7 +214,7 @@ def delete_mascota(mascota_id: str, token: dict = Depends(verificar_token)):
 
 @router.post("/imagenes")
 async def upload_image(file: UploadFile = File(...),token: dict = Depends(verificar_token)):
-    if token["rol"] != "3":
+    if token["rol"] != "3" and token["rol"] != "1":
         raise HTTPException(
             status_code=403,
             detail=error_response("FORBIDDEN", "Rol no autorizado")

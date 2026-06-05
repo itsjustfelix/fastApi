@@ -50,6 +50,75 @@ def get_propietarios(token: dict = Depends(verificar_token)):
         cursor.close()
         conn.close()
 
+
+@router.get("/{cedula_propietario}")
+def get_propietario(cedula_propietario: str, token: dict = Depends(verificar_token)):
+    if token["rol"] != "1":
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para ver propietarios")
+        )
+        
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        
+        nombre_var = cursor.var(oracledb.STRING)
+        codigo_usuario_var = cursor.var(oracledb.STRING)
+        
+        
+        cursor.callproc(
+            "PKG_PROPIETARIOS.PRC_CONSULTAR_POR_CEDULA",
+            [cedula_propietario, nombre_var, codigo_usuario_var]
+        )
+
+        
+        nombre_resultado = nombre_var.getvalue()
+        codigo_resultado = codigo_usuario_var.getvalue()
+
+       
+        if not nombre_resultado and not codigo_resultado:
+            raise HTTPException(
+                status_code=404,
+                detail=error_response("NOT_FOUND", "Propietario no encontrado")
+            )
+
+        return {
+            "nombre": nombre_resultado, 
+            "codigo_usuario": codigo_resultado
+        }
+
+    except HTTPException:
+        raise
+    except oracledb.DatabaseError as e:
+        conn.rollback() if conn else None
+        error, = e.args
+        
+        # Captura por si Oracle lanza el No Data Found directamente
+        if "ORA-01403" in str(error.message):
+            raise HTTPException(
+                status_code=404,
+                detail=error_response("NOT_FOUND", "Propietario no encontrado")
+            )
+            
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}])
+        )
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("INTERNAL_SERVER_ERROR", str(e))
+        )
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+    
 @router.post("", status_code=201)
 def create_propietario(prop: Propietarios_create):
     try:

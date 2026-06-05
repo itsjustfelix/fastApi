@@ -58,6 +58,9 @@ class Citas_show_veterinario(BaseModel):
     codigo: str
     fecha: str
     hora: str
+    cedula_veterinario: str
+    codigo_especializacion: str
+    codigo_mascota: str
     nombre_mascota: str
     estado_cita: str
     

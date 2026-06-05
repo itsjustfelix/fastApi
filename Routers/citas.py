@@ -107,7 +107,7 @@ def get_citas_by_cedula_veterinario(cedula_veterinario: str, token: dict = Depen
         cursor = conn.cursor()
 
         cursor_result = cursor.callfunc(
-            "PKG_CITAS.FN_BUSCAR_POR_CEDULA_VETERINARIO",
+            "PKG_CITAS.fn_buscar_por_codigo_veterinario",
             oracledb.CURSOR,
             [cedula_veterinario]
         )
@@ -178,7 +178,47 @@ def get_citas_ocupadas(cedula_veterinario: str, fecha: str, token: dict = Depend
         cursor.close()
         conn.close()
 
+@router.get("/fecha/{fecha}")
+def get_citas_by_date(fecha: str, token: dict = Depends(verificar_token)):
 
+    if token["rol"] != "1":
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para ver citas")
+        )
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor_result = cursor.callfunc(
+            "PKG_CITAS.FN_BUSCAR_POR_FECHA",
+            oracledb.CURSOR,
+            [fecha]
+        )
+
+        columnas = [col[0].lower() for col in cursor_result.description]
+        citas = []
+        for fila in cursor_result:
+            citas.append(Citas_show.model_validate(dict(zip(columnas, fila))))
+        return citas
+
+    except HTTPException:
+        raise
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}])
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=error_response("SERVER_ERROR", "Error interno del servidor", [{"message": str(e)}])
+        )
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.post("", status_code=201)
 def create_cita(cita: Citas_create,token: dict = Depends(verificar_token)):
@@ -284,6 +324,41 @@ def delete_cita(cita_id: str,token: dict = Depends(verificar_token)):
         else:
             raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
 
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@router.put("/atendida/{cita_id}", status_code=200)
+def update_cita_atendida(cita_id: str, token: dict = Depends(verificar_token)):
+
+    if  token["rol"] != "2":
+        raise HTTPException(
+            status_code=403,
+            detail=error_response("FORBIDDEN", "No autorizado para actualizar citas")
+        )
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.callproc("PKG_CITAS.prc_actualizar_asistida", [
+            cita_id
+        ])
+        conn.commit()
+        return {"message": "Cita actualizada correctamente."}
+    except HTTPException:
+       raise
+
+    except oracledb.DatabaseError as e:
+        conn.rollback()
+        error, = e.args
+        if "ORA-20002" in str(error.message):
+            raise HTTPException(status_code=401, detail=error_response("UNAUTHORIZED", "Credenciales incorrectas"))
+        raise HTTPException(status_code=500, detail=error_response("DATABASE_ERROR", "Error en la base de datos", [{"message": str(error.message)}]))
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=error_response("INTERNAL_SERVER_ERROR", str(e)))
     finally:
         cursor.close()
         conn.close()

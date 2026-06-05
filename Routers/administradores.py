@@ -83,7 +83,7 @@ def create_administrador(admin: Administradores_create, token: dict = Depends(ve
     except oracledb.DatabaseError as e:
         conn.rollback()
         error, = e.args
-        # ORA-00001 = unique constraint — cédula o correo duplicado
+
         if "ORA-00001" in str(error.message):
             raise HTTPException(
                 status_code=409,
