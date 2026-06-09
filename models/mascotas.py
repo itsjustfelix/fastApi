@@ -20,7 +20,7 @@ class Mascotas_create(BaseModel):
         return value
 
 class Mascotas_show(BaseModel):
-    codigo: int
+    codigo: str
     nombre: str
     codigo_especie: str
     nombre_especie: str

@@ -8,7 +8,7 @@ class Propietarios_create(BaseModel):
     nombreCompleto : str
     telefono : str
     sexo : str
-    correo : EmailStr
+    email : EmailStr
     contraseña : str
     rol : str = "3" # Asignamos el rol de administrador por defecto - Nunca cambiar este valor!!!! cambiar solamente si se cambia en la base de datos
 
@@ -54,7 +54,7 @@ class Propietarios_create(BaseModel):
             raise ValueError('El sexo debe ser "M" o "F"')
         return value
     
-    @field_validator('correo')
+    @field_validator('email')
     @classmethod
     def validate_correo(cls, value):
         if not value:

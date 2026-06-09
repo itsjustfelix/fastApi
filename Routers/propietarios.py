@@ -127,7 +127,7 @@ def create_propietario(prop: Propietarios_create):
         codigo_usuario = cursor.callfunc(
             "PKG_USUARIO.FN_guardar_usuario",
             str,
-            [prop.correo, hashear_password(prop.contraseña), prop.rol]
+            [prop.email, hashear_password(prop.contraseña), prop.rol]
         )
         cursor.callproc(
             "PKG_PROPIETARIOS.PRC_GUARDAR", [

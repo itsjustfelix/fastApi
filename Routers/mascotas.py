@@ -47,7 +47,7 @@ def get_mascotas(token: dict = Depends(verificar_token)):
 
 @router.get("/propietario/{codigo_usuario}")
 def get_mascotas_by_propietario(codigo_usuario: str,token: dict = Depends(verificar_token)):
-    if token["rol"] != "3" :
+    if token["rol"] != "3" and token["rol"] != "1":
         raise HTTPException(status_code=403, detail=error_response("FORBIDDEN", "Rol no autorizado"))
     
     
@@ -84,7 +84,7 @@ def get_mascotas_by_propietario(codigo_usuario: str,token: dict = Depends(verifi
 @router.get("/{codigo_mascota}")
 def get_mascota(codigo_mascota: str,token: dict = Depends(verificar_token)):
 
-    if token["rol"] != "1" and token["rol"] != "2":
+    if token["rol"] != "1" and token["rol"] != "2" and token["rol"] != "3" :
         raise HTTPException(
             status_code=403, 
             detail=error_response("FORBIDDEN", "Rol no autorizado")

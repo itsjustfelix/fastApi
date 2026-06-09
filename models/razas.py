@@ -15,22 +15,23 @@ class Razas_create(BaseModel):
         return value
 
 class Razas_show(BaseModel):
-    codigo: int
+    codigo: str
     nombre: str
+    codigo_especie: str
     nombre_especie: str 
 
     class Config:
         from_attributes = True
 
 class Razas_option(BaseModel):
-    codigo: int
+    codigo: str
     nombre: str
     
     class Config:
         from_attributes = True
 
 class Razas_update(BaseModel):
-    codigo: int
+    codigo: str
     nombre: str
     codigo_especie: str
 
